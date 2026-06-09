@@ -18,17 +18,27 @@ class Server(SilaServer):
         name: Optional[str] = None,
         description: Optional[str] = None,
     ):
-        # TODO: fill in your server information
         if name is None:
-            name = "TODO"
+            name = "b-CAP SiLA2 Server"
         if description is None:
-            description = "TODO"
+            description = (
+                "Stateless SiLA 2 server that exposes DENSO robot controller "
+                "functionality over the ORiN b-CAP protocol (via the orin_bcap "
+                "client). It provides reading and writing of controller variables "
+                "(including I/O) and single-shot execution of controller tasks, as "
+                "well as listing of the available variable and task names. The "
+                "server is stateless: each command opens a b-CAP connection, "
+                "performs the operation, and disconnects, so no session state is "
+                "kept between commands. Controller connection parameters (host, "
+                "port, timeout, controller type - default RC9 - provider and "
+                "options) are supplied at startup via a TOML configuration file."
+            )
         super().__init__(
             server_name=name,
             server_description=description,
-            server_type="TODO",
-            server_version="0.1",
-            server_vendor_url="https://gitlab.com/SiLA2/sila_python",
+            server_type="BcapSila2Server",
+            server_version="0.1.0",
+            server_vendor_url="https://example.com",
             server_uuid=server_uuid if server_uuid is not None else uuid4(),
         )
 

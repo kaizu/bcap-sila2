@@ -8,19 +8,22 @@ from typing import Optional
 from uuid import UUID
 
 import typer
-from sila2.framework.utils import running_in_docker
 from typer import BadParameter, Option
 
+from .config import ConfigError, load_config
 from .server import Server
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_IP = "0.0.0.0" if running_in_docker() else "127.0.0.1"  # noqa: S104, possible bind to all interfaces
-
 
 def main(
-    ip_address: str = Option(_DEFAULT_IP, "-a", "--ip-address", help="The IP address"),
-    port: int = Option(50052, "-p", "--port", help="The port"),
+    config_file: str = Option("config.toml", "--config", help="Path to the TOML configuration file"),
+    ip_address: Optional[str] = Option(
+        None, "-a", "--ip-address", help="The IP address [default: [server].host from config]", show_default=False
+    ),
+    port: Optional[int] = Option(
+        None, "-p", "--port", help="The port [default: [server].port from config]", show_default=False
+    ),
     server_uuid: Optional[str] = Option(
         None, "--server-uuid", help="The server UUID [default: generate random UUID]", show_default=False
     ),
@@ -68,16 +71,26 @@ def main(
     # logging setup
     initialize_logging(quiet=quiet, verbose=verbose, debug=debug)
 
+    # load configuration
+    try:
+        config = load_config(config_file)
+    except ConfigError as e:
+        raise BadParameter(str(e), param_hint="--config")
+
+    # resolve bind address/port: CLI overrides the [server] section of the config
+    bind_ip = ip_address if ip_address is not None else config.server.host
+    bind_port = port if port is not None else config.server.port
+
     # run server
-    server = Server(server_uuid=parsed_server_uuid, name=server_name, description=server_description)
+    server = Server(config, server_uuid=parsed_server_uuid, name=server_name, description=server_description)
 
     def start_server():
         if insecure:
-            server.start_insecure(ip_address, port, enable_discovery=not disable_discovery)
+            server.start_insecure(bind_ip, bind_port, enable_discovery=not disable_discovery)
         else:
             server.start(
-                ip_address,
-                port,
+                bind_ip,
+                bind_port,
                 cert_chain=cert,
                 private_key=private_key,
                 enable_discovery=not disable_discovery,

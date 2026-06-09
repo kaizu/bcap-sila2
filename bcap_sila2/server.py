@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 
 from sila2.server import SilaServer
 
+from .config import Config
 from .feature_implementations.taskservice_impl import TaskServiceImpl
 from .feature_implementations.variableservice_impl import VariableServiceImpl
 from .generated.taskservice import TaskServiceFeature
@@ -14,10 +15,15 @@ from .generated.variableservice import VariableServiceFeature
 class Server(SilaServer):
     def __init__(
         self,
+        config: Config,
         server_uuid: Optional[UUID] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
     ):
+        # Controller/task/server settings, read by the feature implementations
+        # via ``self.parent_server.config``.
+        self.config = config
+
         if name is None:
             name = "b-CAP SiLA2 Server"
         if description is None:

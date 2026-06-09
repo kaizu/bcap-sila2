@@ -7,7 +7,11 @@ requires-python = ">=3.11"
 dependencies = [
     "sila2[codegen]>=0.14.0",
     "typer",
+    "orin-bcap",
 ]
+
+[tool.uv.sources]
+orin-bcap = { path = "third_party/orin_bcap", editable = true }
 
 [build-system]
 requires = ["setuptools>=61.0.0"]

@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+import "SiLAFramework.proto";
+
+package sila2.jp.riken.bcap.taskservice.v1;
+
+/* Run robot controller tasks (programs) by name on a DENSO robot controller over b-CAP, and list available task names. The server is stateless: each command opens a b-CAP connection, acquires the task handle, performs the operation, then releases the handle and disconnects. */
+service TaskService {
+  /* 
+      Start a controller task in one-cycle mode (mode 1) by name. This is an observable
+      command. In v1 the command only starts the task and then waits a fixed interval
+      (configured by 'run_wait_seconds', default 10 s) before completing; it does not yet
+      detect actual task completion. The observable form is kept so completion detection
+      can be added later without changing the interface.
+     */
+  rpc RunTask (sila2.jp.riken.bcap.taskservice.v1.RunTask_Parameters) returns (sila2.org.silastandard.CommandConfirmation) {}
+  /* Monitor the state of RunTask */
+  rpc RunTask_Info (sila2.org.silastandard.CommandExecutionUUID) returns (stream sila2.org.silastandard.ExecutionInfo) {}
+  /* Retrieve result of RunTask */
+  rpc RunTask_Result(sila2.org.silastandard.CommandExecutionUUID) returns (sila2.jp.riken.bcap.taskservice.v1.RunTask_Responses) {}
+  /* List the names of all available controller tasks. */
+  rpc GetTaskNames (sila2.jp.riken.bcap.taskservice.v1.GetTaskNames_Parameters) returns (sila2.jp.riken.bcap.taskservice.v1.GetTaskNames_Responses) {}
+}
+
+/* Parameters for RunTask */
+message RunTask_Parameters {
+  sila2.org.silastandard.String TaskName = 1;  /* The name of the controller task (program) to start. */
+}
+
+/* Responses of RunTask */
+message RunTask_Responses {
+  sila2.org.silastandard.Boolean Started = 1;  /* True if the task was started successfully. */
+}
+
+/* Parameters for GetTaskNames */
+message GetTaskNames_Parameters {
+}
+
+/* Responses of GetTaskNames */
+message GetTaskNames_Responses {
+  repeated sila2.org.silastandard.String TaskNames = 1;  /* The list of controller task names. */
+}

@@ -1,0 +1,23 @@
+[project]
+name = "bcap-sila2"
+version = "0.1.0"
+description = "SiLA2 server wrapping the orin_bcap (b-CAP) library for DENSO robot controllers"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "sila2[codegen]>=0.14.0",
+    "typer",
+]
+
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["bcap_sila2*"]
+
+[tool.setuptools.package-data]
+"bcap_sila2.generated" = [
+    "*/*.sila.xml",
+    "*/*.proto",
+]

@@ -1,0 +1,21 @@
+# Example configuration for the b-CAP SiLA2 server.
+# Copy to e.g. config.toml and adjust for your controller, then start the
+# server with: uv run python -m bcap_sila2 --config config.toml
+
+[controller]
+host = "192.168.0.1"        # robot controller IP / hostname (required)
+port = 5007                 # b-CAP TCP port (required)
+timeout = 5                 # communication timeout in seconds
+type = "RC9"                # controller type; default RC9
+# provider is derived from `type` when omitted (RC9 -> CaoProv.DENSO.VRC9).
+# provider = "CaoProv.DENSO.VRC9"
+name = "b-CAP"              # controller_connect name
+machine = "localhost"      # controller_connect machine
+option = ""                 # controller_connect option
+
+[task]
+run_wait_seconds = 10       # RunTask: fixed wait after start (v1 placeholder)
+
+[server]
+host = "0.0.0.0"           # SiLA server listen address
+port = 50052                # SiLA server listen port

@@ -14,7 +14,9 @@ machine = "localhost"      # controller_connect machine
 option = ""                 # controller_connect option
 
 [task]
-run_wait_seconds = 10       # RunTask: fixed wait after start (v1 placeholder)
+poll_interval_seconds = 0.5        # how often RunTask polls the task status
+start_timeout_seconds = 5          # max wait for the task to reach the running state
+completion_timeout_seconds = 300   # max wait for the task to finish (0 = no limit)
 
 [server]
 host = "0.0.0.0"           # SiLA server listen address

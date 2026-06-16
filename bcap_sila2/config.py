@@ -54,11 +54,25 @@ class ControllerConfig:
 
 @dataclass
 class TaskConfig:
-    """Task execution settings."""
+    """Task execution settings.
 
-    # v1: RunTask only starts the task and waits this fixed interval before
-    # completing (placeholder for future real completion detection).
-    run_wait_seconds: float = 10.0
+    RunTask starts a task and then polls its execution status until it leaves
+    the running state. ``poll_interval_seconds`` sets the polling cadence;
+    ``start_timeout_seconds`` bounds how long to wait for the task to reach the
+    running state after start; ``completion_timeout_seconds`` bounds how long to
+    wait for the running task to finish (0 means wait indefinitely).
+    """
+
+    poll_interval_seconds: float = 0.5
+    start_timeout_seconds: float = 5.0
+    completion_timeout_seconds: float = 300.0
+
+    def __post_init__(self) -> None:
+        for name in ("poll_interval_seconds", "start_timeout_seconds", "completion_timeout_seconds"):
+            if getattr(self, name) < 0:
+                raise ConfigError(f"[task].{name} must not be negative.")
+        if self.poll_interval_seconds <= 0:
+            raise ConfigError("[task].poll_interval_seconds must be greater than 0.")
 
 
 @dataclass

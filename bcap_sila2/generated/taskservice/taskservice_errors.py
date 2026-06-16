@@ -18,5 +18,12 @@ class ControllerConnectionError(DefinedExecutionError):
 class TaskAccessError(DefinedExecutionError):
     def __init__(self, message: Optional[str] = None):
         if message is None:
-            message = "Failed to access or start the requested task (e.g. the task name does not exist or start was rejected)."
+            message = "Failed to access, start, or run the requested task (e.g. the task name does not exist, start was rejected, or the task stopped abnormally instead of completing one cycle)."
         super().__init__(TaskServiceFeature.defined_execution_errors["TaskAccessError"], message=message)
+
+
+class TaskExecutionTimeout(DefinedExecutionError):
+    def __init__(self, message: Optional[str] = None):
+        if message is None:
+            message = "The task did not complete within the configured timeout. The task was stopped (initialized stop) before the command failed."
+        super().__init__(TaskServiceFeature.defined_execution_errors["TaskExecutionTimeout"], message=message)

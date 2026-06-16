@@ -9,11 +9,14 @@
   <Command>
     <Identifier>RunTask</Identifier>
     <DisplayName>Run Task</DisplayName>
-    <Description>Start a controller task in one-cycle mode (mode 1) by name. This is an observable
-      command. In v1 the command only starts the task and then waits a fixed interval
-      (configured by 'run_wait_seconds', default 10 s) before completing; it does not yet
-      detect actual task completion. The observable form is kept so completion detection
-      can be added later without changing the interface.</Description>
+    <Description>Start a controller task in one-cycle mode (mode 1) by name and wait for it to
+      finish. This is an observable command. After starting the task the command holds
+      the b-CAP connection and polls the task execution status: it first waits for the
+      task to enter the running state, then waits for it to leave that state. A clean
+      one-cycle completion (status returns to ready) finishes the command successfully.
+      If completion is not reached within the configured timeout, the task is stopped
+      (initialized stop) and the command fails. The command stays free of connection and
+      timing details; those are configured on the server.</Description>
     <Observable>Yes</Observable>
     <Parameter>
       <Identifier>TaskName</Identifier>
@@ -34,6 +37,7 @@
     <DefinedExecutionErrors>
       <Identifier>ControllerConnectionError</Identifier>
       <Identifier>TaskAccessError</Identifier>
+      <Identifier>TaskExecutionTimeout</Identifier>
     </DefinedExecutionErrors>
   </Command>
   <Command>
@@ -66,6 +70,11 @@
   <DefinedExecutionError>
     <Identifier>TaskAccessError</Identifier>
     <DisplayName>Task Access Error</DisplayName>
-    <Description>Failed to access or start the requested task (e.g. the task name does not exist or start was rejected).</Description>
+    <Description>Failed to access, start, or run the requested task (e.g. the task name does not exist, start was rejected, or the task stopped abnormally instead of completing one cycle).</Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>TaskExecutionTimeout</Identifier>
+    <DisplayName>Task Execution Timeout</DisplayName>
+    <Description>The task did not complete within the configured timeout. The task was stopped (initialized stop) before the command failed.</Description>
   </DefinedExecutionError>
 </Feature>

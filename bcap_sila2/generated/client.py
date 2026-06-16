@@ -35,6 +35,11 @@ class Client(SilaClient):
         )
 
         self._register_defined_execution_error_class(
+            taskservice.TaskServiceFeature.defined_execution_errors["TaskExecutionTimeout"],
+            taskservice.TaskExecutionTimeout,
+        )
+
+        self._register_defined_execution_error_class(
             variableservice.VariableServiceFeature.defined_execution_errors["ControllerConnectionError"],
             variableservice.ControllerConnectionError,
         )

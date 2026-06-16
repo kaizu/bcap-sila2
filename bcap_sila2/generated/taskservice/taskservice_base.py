@@ -53,11 +53,14 @@ class TaskServiceBase(FeatureImplementationBase, ABC):
     ) -> RunTask_Responses:
         """
 
-        Start a controller task in one-cycle mode (mode 1) by name. This is an observable
-        command. In v1 the command only starts the task and then waits a fixed interval
-        (configured by 'run_wait_seconds', default 10 s) before completing; it does not yet
-        detect actual task completion. The observable form is kept so completion detection
-        can be added later without changing the interface.
+        Start a controller task in one-cycle mode (mode 1) by name and wait for it to
+        finish. This is an observable command. After starting the task the command holds
+        the b-CAP connection and polls the task execution status: it first waits for the
+        task to enter the running state, then waits for it to leave that state. A clean
+        one-cycle completion (status returns to ready) finishes the command successfully.
+        If completion is not reached within the configured timeout, the task is stopped
+        (initialized stop) and the command fails. The command stays free of connection and
+        timing details; those are configured on the server.
 
 
 

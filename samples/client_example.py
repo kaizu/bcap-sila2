@@ -1,9 +1,10 @@
 """Example SiLA client for the b-CAP SiLA2 server.
 
 Connects to a running server and exercises the read-only commands
-(GetVariableNames, GetTaskNames, ReadVariable). Write and run commands
-(WriteVariable, RunTask) are shown as commented-out examples so this script is
-safe to run against a live controller without changing its state.
+(GetVariableNames, GetTaskNames, ReadVariable). The WriteVariable example is
+left commented out, and RunTask only runs when a task name is passed with
+``--run-task``, so by default this script is safe to run against a live
+controller without changing its state.
 
 Start the server first, e.g.:
 
@@ -12,19 +13,36 @@ Start the server first, e.g.:
 then run this sample:
 
     uv run python samples/client_example.py --host 127.0.0.1 --port 50052
+
+To also start a task and wait for it to finish:
+
+    uv run python samples/client_example.py --run-task Pro1
 """
 
 from __future__ import annotations
 
 import argparse
+import time
 
 from sila2.client import SilaClient
+from sila2.framework.errors.defined_execution_error import DefinedExecutionError
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--host", default="127.0.0.1", help="server host")
     parser.add_argument("--port", type=int, default=50052, help="server port")
+    parser.add_argument(
+        "--run-task",
+        metavar="NAME",
+        help="start this task and wait for it to finish (changes controller state)",
+    )
+    parser.add_argument(
+        "--poll-interval",
+        type=float,
+        default=0.5,
+        help="how often to print RunTask status while waiting (seconds)",
+    )
     args = parser.parse_args()
 
     # Connect without encryption (matches `--insecure` on the server).
@@ -53,18 +71,43 @@ def main() -> None:
     else:
         print("\nNo variables available to read.")
 
-    # --- write / run commands (examples, commented out) ---------------------
-    # These change controller state, so they are left commented out.
+    # --- write example (commented out) --------------------------------------
+    # This changes controller state, so it is left commented out.
     #
     # Write a value to a variable (value is a string, with an explicit DataType):
     # client.VariableService.WriteVariable("I100", "1", "Boolean")
     # client.VariableService.WriteVariable("MyInt", "42", "Integer")
-    #
-    # Run a task by name (observable command). RunTask returns a command
-    # instance; get_responses() blocks until the command completes:
-    # task = client.TaskService.RunTask("Pro1")
-    # result = task.get_responses()
-    # print("RunTask started:", result.Started)
+
+    # --- run a task and wait for completion (opt-in) ------------------------
+    if args.run_task:
+        run_task_and_wait(client, args.run_task, args.poll_interval)
+
+
+def run_task_and_wait(client: SilaClient, task_name: str, poll_interval: float) -> None:
+    """Start a task and wait for the observable command to finish.
+
+    RunTask is an observable command: the server starts the task, polls its
+    execution status, and only finishes the command once the task has run one
+    cycle (or fails / times out). The client mirrors that by waiting for the
+    command instance to reach a terminal state, then requesting the result.
+    """
+    print(f"\nRunTask({task_name!r}) - starting and waiting for completion...")
+    task = client.TaskService.RunTask(task_name)
+
+    # get_responses() does not block; poll until the command is in a terminal
+    # state (finishedSuccessfully / finishedWithError).
+    while not task.done:
+        time.sleep(poll_interval)
+        print(f"  status={task.status}")
+
+    try:
+        result = task.get_responses()
+    except DefinedExecutionError as e:
+        # e.g. TaskExecutionTimeout (timed out, task stopped) or TaskAccessError
+        # (the task stopped abnormally instead of completing one cycle).
+        print(f"RunTask failed [{e.identifier}]: {e.message}")
+        return
+    print(f"RunTask completed, Started={result.Started}")
 
 
 if __name__ == "__main__":

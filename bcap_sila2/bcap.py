@@ -33,6 +33,10 @@ _GET_STATUS = "GetStatus"
 _INITIALIZED_STOP = 4
 
 
+class RobotUnavailableError(Exception):
+    """No robot could be found on the controller to acquire."""
+
+
 class TaskRunError(Exception):
     """Base class for task-run failures other than connection/ORiN errors."""
 
@@ -106,6 +110,31 @@ def _task(
             client.task_release(handle)
         except Exception:
             pass
+
+
+@contextmanager
+def _robot(
+    client: BCAPClient, controller_handle: Any, name: str, option: str = ""
+) -> Iterator[Any]:
+    """Acquire a controller robot handle, releasing it on exit."""
+    handle = client.controller_getrobot(controller_handle, name, option)
+    try:
+        yield handle
+    finally:
+        try:
+            client.robot_release(handle)
+        except Exception:
+            pass
+
+
+def _resolve_robot_name(client: BCAPClient, controller_handle: Any, name: str) -> str:
+    """Return ``name`` if given, else the first robot reported by the controller."""
+    if name:
+        return name
+    names = client.controller_getrobotnames(controller_handle, "")
+    if not names:
+        raise RobotUnavailableError("No robot is available on the controller.")
+    return names[0]
 
 
 def read_variable(cfg: ControllerConfig, name: str) -> Any:
@@ -212,3 +241,27 @@ def get_task_names(cfg: ControllerConfig) -> list[str]:
     """List the names of all controller tasks."""
     with controller_session(cfg) as (client, ctrl):
         return client.controller_gettasknames(ctrl, "")
+
+
+def _robot_execute_floats(cfg: ControllerConfig, command: str, robot_name: str = "") -> list[float]:
+    """Acquire a robot and return ``robot_execute(robot, command)`` as a float list.
+
+    The robot defaults to the first one reported by the controller. b-CAP pose
+    commands ("CurJnt", "CurPos", ...) return a numeric array, which the b-CAP
+    client decodes as a Python list; this coerces the elements to ``float``.
+    """
+    with controller_session(cfg) as (client, ctrl):
+        name = _resolve_robot_name(client, ctrl, robot_name)
+        with _robot(client, ctrl, name) as robot:
+            value = client.robot_execute(robot, command)
+    return [float(v) for v in value]
+
+
+def get_joint_angles(cfg: ControllerConfig, robot_name: str = "") -> list[float]:
+    """Return the current joint angles via robot_execute(robot, "CurJnt")."""
+    return _robot_execute_floats(cfg, "CurJnt", robot_name)
+
+
+def get_cartesian_position(cfg: ControllerConfig, robot_name: str = "") -> list[float]:
+    """Return the current Cartesian position via robot_execute(robot, "CurPos")."""
+    return _robot_execute_floats(cfg, "CurPos", robot_name)

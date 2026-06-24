@@ -6,10 +6,12 @@ from typing import Set
 from sila2.client import SilaClient
 from sila2.framework import FullyQualifiedFeatureIdentifier
 
-from . import taskservice, variableservice
+from . import robotservice, taskservice, variableservice
 
 
 class Client(SilaClient):
+
+    RobotService: robotservice.RobotServiceClient
 
     TaskService: taskservice.TaskServiceClient
 
@@ -17,12 +19,23 @@ class Client(SilaClient):
 
     _expected_features: Set[FullyQualifiedFeatureIdentifier] = {
         FullyQualifiedFeatureIdentifier("org.silastandard/core/SiLAService/v1"),
+        FullyQualifiedFeatureIdentifier("jp.riken/bcap/RobotService/v1"),
         FullyQualifiedFeatureIdentifier("jp.riken/bcap/TaskService/v1"),
         FullyQualifiedFeatureIdentifier("jp.riken/bcap/VariableService/v1"),
     }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self._register_defined_execution_error_class(
+            robotservice.RobotServiceFeature.defined_execution_errors["ControllerConnectionError"],
+            robotservice.ControllerConnectionError,
+        )
+
+        self._register_defined_execution_error_class(
+            robotservice.RobotServiceFeature.defined_execution_errors["RobotAccessError"],
+            robotservice.RobotAccessError,
+        )
 
         self._register_defined_execution_error_class(
             taskservice.TaskServiceFeature.defined_execution_errors["ControllerConnectionError"],

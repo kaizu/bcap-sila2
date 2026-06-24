@@ -6,8 +6,10 @@ from uuid import UUID, uuid4
 from sila2.server import SilaServer
 
 from .config import Config
+from .feature_implementations.robotservice_impl import RobotServiceImpl
 from .feature_implementations.taskservice_impl import TaskServiceImpl
 from .feature_implementations.variableservice_impl import VariableServiceImpl
+from .generated.robotservice import RobotServiceFeature
 from .generated.taskservice import TaskServiceFeature
 from .generated.variableservice import VariableServiceFeature
 
@@ -53,3 +55,6 @@ class Server(SilaServer):
 
         self.variableservice = VariableServiceImpl(self)
         self.set_feature_implementation(VariableServiceFeature, self.variableservice)
+
+        self.robotservice = RobotServiceImpl(self)
+        self.set_feature_implementation(RobotServiceFeature, self.robotservice)
